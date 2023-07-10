@@ -1,3 +1,4 @@
+use crate::setup::RUNTIME;
 use crate::{BleDevice, BleError};
 use btleplug::api::CentralEvent;
 use btleplug::api::{
@@ -16,7 +17,7 @@ use uuid::Uuid;
 
 struct Listener {
     uuid: Uuid,
-    callback: Box<dyn Fn(&[u8]) + Send>,
+    callback: Arc<dyn Fn(&[u8]) + Send + Sync>,
 }
 
 pub struct BleHandler {
@@ -64,7 +65,8 @@ impl BleHandler {
             self.on_disconnect = Some(Mutex::new(Box::new(cb)));
         }
         // start background task for notifications
-        tokio::spawn(listen_notify(
+        let rt = RUNTIME.get().ok_or(BleError::RuntimeNotInitialized)?;
+        rt.spawn(listen_notify(
             self.get_device().await?,
             self.notify_listeners.clone(),
         ));
@@ -204,14 +206,14 @@ impl BleHandler {
     pub async fn subscribe(
         &mut self,
         c: Uuid,
-        callback: impl Fn(&[u8]) + Send + 'static,
+        callback: impl Fn(&[u8]) + Send + Sync + 'static,
     ) -> Result<(), BleError> {
         let dev = self.get_device().await?;
         let charac = self.get_charac(c)?;
         dev.subscribe(charac).await?;
         self.notify_listeners.lock().await.push(Listener {
             uuid: charac.uuid,
-            callback: Box::new(callback),
+            callback: Arc::new(callback),
         });
         Ok(())
     }
@@ -243,10 +245,13 @@ async fn listen_notify(
     listeners: Arc<Mutex<Vec<Listener>>>,
 ) -> Result<(), BleError> {
     let mut stream = dev.notifications().await?;
+    let rt = RUNTIME.get().ok_or(BleError::RuntimeNotInitialized)?;
     while let Some(data) = stream.next().await {
         for l in listeners.lock().await.iter() {
             if l.uuid == data.uuid {
-                (l.callback)(&data.value)
+                let data = data.value.clone();
+                let cb = l.callback.clone();
+                rt.spawn_blocking(move || cb(&data));
             }
         }
     }
