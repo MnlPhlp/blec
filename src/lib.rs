@@ -4,6 +4,8 @@ mod handler;
 mod setup;
 use btleplug::{api::Peripheral as _, platform::Peripheral};
 pub use error::BleError;
+use futures::Future;
+use setup::RUNTIME;
 
 #[derive(Debug, Clone, Ord, Eq)]
 pub struct BleDevice {
@@ -37,4 +39,15 @@ impl BleDevice {
             is_connected: peripheral.is_connected().await?,
         })
     }
+}
+
+/// spawn future on the internally initialized runtime
+pub fn spawn<F>(f: F) -> Result<(), BleError>
+where
+    F: Future + Send + Sync + 'static,
+    F::Output: Send,
+{
+    let rt = RUNTIME.get().ok_or(BleError::RuntimeNotInitialized)?;
+    rt.spawn(f);
+    Ok(())
 }
