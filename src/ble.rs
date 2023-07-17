@@ -62,7 +62,7 @@ pub async fn connect(
     id: String,
     service: Uuid,
     characs: Vec<Uuid>,
-    on_disconnect: Option<impl FnOnce() + Send + 'static>,
+    on_disconnect: Option<Box<dyn FnOnce() + Send + 'static>>,
 ) -> Result<(), BleError> {
     run_on_runtime(async move {
         let mut handler = get_handler().lock().await;

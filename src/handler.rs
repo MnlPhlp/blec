@@ -51,7 +51,7 @@ impl BleHandler {
         address: String,
         service: Uuid,
         characs: Vec<Uuid>,
-        on_disconnect: Option<impl FnOnce() + Send + 'static>,
+        on_disconnect: Option<Box<dyn FnOnce() + Send + 'static>>,
     ) -> Result<(), BleError> {
         if self.devices.len() == 0 {
             self.discover(None, 1000).await?;
@@ -62,7 +62,7 @@ impl BleHandler {
         self.connect_service(service, &characs).await?;
         // set callback to run on disconnect
         if let Some(cb) = on_disconnect {
-            self.on_disconnect = Some(Mutex::new(Box::new(cb)));
+            self.on_disconnect = Some(Mutex::new(cb));
         }
         // start background task for notifications
         let rt = RUNTIME.get().ok_or(BleError::RuntimeNotInitialized)?;
