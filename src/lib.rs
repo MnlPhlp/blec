@@ -2,6 +2,7 @@ pub mod ble;
 mod error;
 mod handler;
 mod setup;
+pub use ble::*;
 use btleplug::{api::Peripheral as _, platform::Peripheral};
 pub use error::BleError;
 use futures::Future;
@@ -44,10 +45,16 @@ impl BleDevice {
 /// spawn future on the internally initialized runtime
 pub fn spawn<F>(f: F) -> Result<(), BleError>
 where
-    F: Future + Send + Sync + 'static,
+    F: Future + Send + 'static,
     F::Output: Send,
 {
     let rt = RUNTIME.get().ok_or(BleError::RuntimeNotInitialized)?;
     rt.spawn(f);
     Ok(())
+}
+
+/// block on an async operation
+pub fn block_on<F: Future>(f: F) -> Result<F::Output, BleError> {
+    let rt = RUNTIME.get().ok_or(BleError::RuntimeNotInitialized)?;
+    Ok(rt.block_on(f))
 }

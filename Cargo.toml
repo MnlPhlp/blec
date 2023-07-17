@@ -1,7 +1,15 @@
 [package]
-name = "btleplug_helper"
+name = "blec"
 version = "0.1.0"
 edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "simple cross-platform ble client library based on btleplug"
+homepage = "https://github.com/MnlPhlp/blec"
+repository = "https://github.com/MnlPhlp/blec"
+keywords = ["ble", "client", "cross-platform","btleplug","simple"]
+categories = ["asynchronous","os","api-bindings"]
+readme = "README.md"
+
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

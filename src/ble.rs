@@ -1,10 +1,9 @@
 use crate::setup::{self, RUNTIME};
-use crate::BleDevice;
 use crate::{handler::BleHandler, BleError};
+use crate::{spawn, BleDevice};
 use futures::{Future, StreamExt};
 use once_cell::sync::OnceCell;
 use tokio::sync::{mpsc, Mutex};
-use tokio::task::JoinHandle;
 use uuid::Uuid;
 
 static HANDLER: OnceCell<Mutex<BleHandler>> = OnceCell::new();
@@ -49,24 +48,15 @@ where
     rt.spawn(f).await.map_err(|e| BleError::JoinError(e))?
 }
 
-fn spawn_on_runtime<F, O>(f: F) -> Result<JoinHandle<Result<O, BleError>>, BleError>
-where
-    F: Future<Output = Result<O, BleError>> + Send + 'static,
-    O: Send + 'static,
-{
-    let rt = RUNTIME.get().ok_or(BleError::RuntimeNotInitialized)?;
-    Ok(rt.spawn(f))
-}
-
 pub async fn connect(
-    id: String,
+    addr: String,
     service: Uuid,
     characs: Vec<Uuid>,
-    on_disconnect: Option<Box<dyn FnOnce() + Send + 'static>>,
+    on_disconnect: Option<impl Fn() + Send + 'static>,
 ) -> Result<(), BleError> {
     run_on_runtime(async move {
         let mut handler = get_handler().lock().await;
-        handler.connect(id, service, characs, on_disconnect).await
+        handler.connect(addr, service, characs, on_disconnect).await
     })
     .await
 }
@@ -79,11 +69,8 @@ pub async fn disconnect() -> Result<(), BleError> {
     .await
 }
 
-pub fn discover(
-    sink: mpsc::Sender<Vec<BleDevice>>,
-    timeout: u64,
-) -> Result<JoinHandle<Result<Vec<BleDevice>, BleError>>, BleError> {
-    spawn_on_runtime(async move {
+pub fn discover(sink: mpsc::Sender<Vec<BleDevice>>, timeout: u64) -> Result<(), BleError> {
+    spawn(async move {
         let mut handler = get_handler().lock().await;
         handler.discover(Some(sink), timeout).await
     })
