@@ -6,6 +6,7 @@ use btleplug::api::{
 };
 use btleplug::platform::{Adapter, Manager, Peripheral};
 use futures::{Stream, StreamExt};
+use log::debug;
 use std::collections::HashMap;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -100,7 +101,9 @@ impl BleHandler {
             .get(&address)
             .ok_or(BleError::UnknownPeripheral(address.clone()))?;
         if !device.is_connected().await? {
+            debug!("Connecting to device");
             device.connect().await?;
+            debug!("Connecting done");
         }
         self.connected = Some(Arc::new(device.clone()));
         Ok(())
