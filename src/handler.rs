@@ -122,7 +122,7 @@ impl BleHandler {
         }
         if let Some(on_disconnect) = &self.on_disconnect {
             let callback = on_disconnect.lock().await;
-            callbac);
+            callback();
         }
         self.characs.clear();
         self.devices.clear();
