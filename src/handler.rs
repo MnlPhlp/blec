@@ -28,7 +28,7 @@ pub struct BleHandler {
     adapter: Adapter,
     notify_abort: Option<AbortHandle>,
     notify_listeners: Arc<Mutex<Vec<Listener>>>,
-    on_disconnect: Option<Mutex<Box<dyn FnOnce() + Send>>>,
+    on_disconnect: Option<Mutex<Box<dyn Fn() + Send>>>,
 }
 
 impl BleHandler {
@@ -119,6 +119,10 @@ impl BleHandler {
                 dev.disconnect().await?;
             }
             self.connected = None;
+        }
+        if let Some(on_disconnect) = &self.on_disconnect {
+            let callback = on_disconnect.lock().await;
+            callbac);
         }
         self.characs.clear();
         self.devices.clear();
