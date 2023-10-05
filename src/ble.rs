@@ -1,6 +1,6 @@
 use crate::setup::{self, RUNTIME};
 use crate::{handler::BleHandler, BleError};
-use crate::{spawn, BleDevice};
+use crate::{spawn, BleAddress, BleDevice};
 use futures::{Future, StreamExt};
 use once_cell::sync::OnceCell;
 use tokio::sync::{mpsc, Mutex};
@@ -49,7 +49,7 @@ where
 }
 
 pub async fn connect(
-    addr: String,
+    addr: BleAddress,
     service: Uuid,
     characs: Vec<Uuid>,
     on_disconnect: Option<impl Fn() + Send + 'static>,

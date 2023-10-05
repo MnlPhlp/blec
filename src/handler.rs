@@ -1,5 +1,5 @@
 use crate::setup::RUNTIME;
-use crate::{BleDevice, BleError};
+use crate::{BleAddress, BleDevice, BleError};
 use btleplug::api::CentralEvent;
 use btleplug::api::{
     Central, Characteristic, Manager as _, Peripheral as _, ScanFilter, WriteType,
@@ -24,7 +24,7 @@ struct Listener {
 pub struct BleHandler {
     connected: Option<Arc<Peripheral>>,
     characs: Vec<Characteristic>,
-    devices: HashMap<String, Peripheral>,
+    devices: HashMap<BleAddress, Peripheral>,
     adapter: Adapter,
     notify_abort: Option<AbortHandle>,
     notify_listeners: Arc<Mutex<Vec<Listener>>>,
@@ -49,7 +49,7 @@ impl BleHandler {
 
     pub async fn connect(
         &mut self,
-        address: String,
+        address: BleAddress,
         service: Uuid,
         characs: Vec<Uuid>,
         on_disconnect: Option<impl Fn() + Send + 'static>,
@@ -90,16 +90,17 @@ impl BleHandler {
         Ok(())
     }
 
-    async fn connect_device(&mut self, address: String) -> Result<(), BleError> {
+    async fn connect_device(&mut self, address: BleAddress) -> Result<(), BleError> {
+        debug!("connecting to {address}",);
         if let Some(dev) = self.connected.clone() {
-            if dev.address().to_string() == address {
+            if address == dev.address() {
                 return Err(BleError::AlreadyConnected.into());
             }
         }
         let device = self
             .devices
             .get(&address)
-            .ok_or(BleError::UnknownPeripheral(address.clone()))?;
+            .ok_or(BleError::UnknownPeripheral(address.to_string()))?;
         if !device.is_connected().await? {
             debug!("Connecting to device");
             device.connect().await?;
