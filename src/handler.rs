@@ -67,10 +67,11 @@ impl BleHandler {
         }
         // start background task for notifications
         let rt = RUNTIME.get().ok_or(BleError::RuntimeNotInitialized)?;
-        rt.spawn(listen_notify(
+        let listen_handle = rt.spawn(listen_notify(
             self.get_device().await?,
             self.notify_listeners.clone(),
         ));
+        self.notify_abort = Some(listen_handle.abort_handle());
         Ok(())
     }
 
@@ -111,10 +112,12 @@ impl BleHandler {
     }
 
     pub async fn disconnect(&mut self) -> Result<(), BleError> {
+        debug!("disconnecting");
         if let Some(notify) = self.notify_abort.as_ref() {
             notify.abort();
             self.notify_abort = None;
         }
+        *self.notify_listeners.lock().await = vec![];
         if let Some(dev) = self.connected.as_mut() {
             if let Ok(true) = dev.is_connected().await {
                 dev.disconnect().await?;
