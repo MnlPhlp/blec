@@ -1,10 +1,9 @@
 // taken from https://github.com/trobanga/flutter_btleplug/blob/b092ef415b36e60f4bb6df0ca261efdedaaa4a7e/packages/btleplug/native/src/ble/setup/ios.rs
 
-use crate::ble::Error;
+use super::RUNTIME;
+use crate::error::BleError;
 
-pub static RUNTIME: OnceCell<Runtime> = OnceCell::new();
-
-pub fn create_runtime() -> Result<(), Error> {
+pub fn create_runtime() -> Result<(), BleError> {
     let runtime = {
         tokio::runtime::Builder::new_multi_thread()
             .enable_all()
@@ -12,6 +11,6 @@ pub fn create_runtime() -> Result<(), Error> {
             .build()
             .unwrap()
     };
-    RUNTIME.set(runtime).map_err(|_| Error::Runtime)?;
+    RUNTIME.set(runtime).map_err(|_| BleError::Runtime)?;
     Ok(())
 }

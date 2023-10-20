@@ -6,9 +6,8 @@ use once_cell::sync::OnceCell;
 use std::cell::RefCell;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use crate::BleError;
-
 use super::RUNTIME;
+use crate::BleError;
 
 static CLASS_LOADER: OnceCell<GlobalRef> = OnceCell::new();
 pub static JAVAVM: OnceCell<JavaVM> = OnceCell::new();
