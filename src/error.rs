@@ -58,4 +58,7 @@ pub enum BleError {
 
     #[error("could not join fuure: {0}")]
     JoinError(tokio::task::JoinError),
+
+    #[error("no bluetooth adapters found")]
+    NoAdapters,
 }

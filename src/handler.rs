@@ -35,7 +35,7 @@ impl BleHandler {
     pub async fn new() -> Result<Self, BleError> {
         let manager = Manager::new().await?;
         let adapters = manager.adapters().await?;
-        let central = adapters.into_iter().next().expect("cannot fail");
+        let central = adapters.into_iter().next().ok_or(BleError::NoAdapters)?;
         Ok(Self {
             devices: HashMap::new(),
             characs: vec![],
