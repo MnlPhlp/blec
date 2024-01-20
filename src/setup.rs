@@ -16,15 +16,9 @@ pub static RUNTIME: OnceCell<Runtime> = once_cell::sync::OnceCell::new();
 
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 pub fn create_runtime() -> Result<(), super::BleError> {
-    use std::sync::atomic::{AtomicUsize, Ordering};
-
-    let runtime = tokio::runtime::Builder::new_multi_thread()
+    let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
-        .thread_name_fn(|| {
-            static ATOMIC_ID: AtomicUsize = AtomicUsize::new(0);
-            let id = ATOMIC_ID.fetch_add(1, Ordering::SeqCst);
-            format!("Thread {id}")
-        })
+        .thread_name("BLE Thread")
         .build()
         .unwrap();
     RUNTIME.set(runtime).map_err(|_| super::BleError::Runtime)?;

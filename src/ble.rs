@@ -1,6 +1,6 @@
 use crate::setup::{self, RUNTIME};
+use crate::{block_on, spawn, BleAddress, BleDevice};
 use crate::{handler::BleHandler, BleError};
-use crate::{spawn, BleAddress, BleDevice};
 use futures::{Future, StreamExt};
 use once_cell::sync::OnceCell;
 use tokio::sync::{mpsc, Mutex};
@@ -74,6 +74,23 @@ pub fn discover(sink: mpsc::Sender<Vec<BleDevice>>, timeout: u64) -> Result<(), 
         let mut handler = get_handler().lock().await;
         handler.discover(Some(sink), timeout).await
     })
+}
+
+pub async fn discover_async(timeout: u64) -> Result<Vec<BleDevice>, BleError> {
+    let discovered = run_on_runtime(async move {
+        let mut handler = get_handler().lock().await;
+        handler.discover(None, timeout).await
+    })
+    .await?;
+    Ok(discovered)
+}
+
+pub fn discover_blocking(timeout: u64) -> Result<Vec<BleDevice>, BleError> {
+    let discovered = block_on(async move {
+        let mut handler = get_handler().lock().await;
+        handler.discover(None, timeout).await
+    })??;
+    Ok(discovered)
 }
 
 pub async fn send_data(charac: Uuid, data: Vec<u8>) -> Result<(), BleError> {

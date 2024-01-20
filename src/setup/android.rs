@@ -4,7 +4,6 @@ use jni::objects::GlobalRef;
 use jni::{AttachGuard, JNIEnv, JavaVM};
 use once_cell::sync::OnceCell;
 use std::cell::RefCell;
-use std::sync::atomic::{AtomicUsize, Ordering};
 
 use super::RUNTIME;
 use crate::BleError;
@@ -21,13 +20,9 @@ pub fn create_runtime() -> Result<(), BleError> {
     let env = vm.attach_current_thread().unwrap();
 
     setup_class_loader(&env)?;
-    let runtime = tokio::runtime::Builder::new_multi_thread()
+    let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
-        .thread_name_fn(|| {
-            static ATOMIC_ID: AtomicUsize = AtomicUsize::new(0);
-            let id = ATOMIC_ID.fetch_add(1, Ordering::SeqCst);
-            format!("intiface-thread-{}", id)
-        })
+        .thread_name("BLE Thread")
         .on_thread_stop(move || {
             JNI_ENV.with(|f| *f.borrow_mut() = None);
         })
